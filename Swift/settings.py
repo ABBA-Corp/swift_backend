@@ -40,6 +40,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'visa',
     'corsheaders',
+    "paycomuz",
+    'transaction.apps.TransactionConfig',
 ]
 
 MIDDLEWARE = [
@@ -136,3 +138,16 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 USE_X_FORWARDED_HOST = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+
+PAYME_PRICE_HELPER = 100
+
+
+PAYCOM_SETTINGS = {
+    "TOKEN":"63d2758145caa8355e11324f", #token
+    "KASSA_ID": "63d2758145caa8355e11324f",  # kassa id
+    "SECRET_KEY": "4rzzcSY0oKchX?khggjGpGGKKV3djt4#ESAH",  # production key
+    "ACCOUNTS": {
+        "KEY": "order_id"
+    }
+}
