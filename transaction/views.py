@@ -1,59 +1,59 @@
-from django.conf import settings
-from paycomuz import Paycom
 from paycomuz.views import MerchantAPIView
-from rest_framework import status
+from paycomuz import Paycom
+from .models import Order
+
+
 from rest_framework.response import Response
-from rest_framework.views import APIView
-from . import serializers
-from .helper import CheckPayMeTransaction
-from .models import TRANSACTIONTYPECHOICES
-from .service import initialize_transaction
+from rest_framework.decorators import api_view
+
+from decimal import Decimal
 
 
-converter_amount = settings.PAYME_PRICE_HELPER
 
 
-class InitializePaymentAPIView(APIView):
-    serializer_class = serializers.InitializePaymentSerializer
-    
-    def post(self, request):
-        data = self.serializer_class(data=request.data)
-        data.is_valid(raise_exception=True)
+class CheckOrder(Paycom):
+    """Order ni tekshiramiz."""
+    def check_order(self, amount, account, **kwargs):
+        order_id = int(account['order_id'])
+        order = Order.objects.filter(id=order_id).first()
+        if order is not None:
+            if Decimal(amount) != Decimal(order.amount_for_payme):
+                return self.INVALID_AMOUNT
+            return self.ORDER_FOUND
+        else:
+            return self.ORDER_NOT_FOND
 
-        transaction_type = data.validated_data.get("transaction_type")
-        price = data.validated_data.get("price")
+    def successfully_payment(self, account, transaction, *args, **kwargs):
+        order_id = int(transaction.order_key)
+        order = Order.objects.filter(id=order_id).first()
+        order.is_payed = True
+        order.save()
 
-        transaction_id = initialize_transaction(
-            request.user,
-            price,
-            transaction_type,
-        )
-        generated_link = ""
-        if transaction_type == TRANSACTIONTYPECHOICES.PAYME:
-            """
-            Note:
-            PayMe accepts price in UZB TIYN that's why, we multiply the price by 100 # noqa
-            sum = 10 000
-            Payme accepts it as 10000 tiyns that is 100 sums
-            thats why we send 10000 sums * 100 that is 1 000 000 tiyn
-            """
-            price = price * converter_amount
-            # TODO: change success return url
-            generated_link = Paycom().create_initialization(
-                price,
-                transaction_id,
-                return_url="https://swiftvisa.uz/",
-            )
-        return Response(
-            status=status.HTTP_200_OK,
-            data={"generated_link": generated_link},
-        )
+        print(order)
 
-initialize_payment_api_view = InitializePaymentAPIView.as_view()
+    def cancel_payment(self, account, transaction, *args, **kwargs):
+        order_id = int(transaction.order_key)
+        order = Order.objects.filter(id=order_id).first()
+        order.is_payed = False
+        order.save()
 
 
-class AcceptPaymeRequestsView(MerchantAPIView):
-    VALIDATE_CLASS = CheckPayMeTransaction
+class PaymentView(MerchantAPIView):
+    """Bu yerda biz validate qilamiz."""
+    VALIDATE_CLASS = CheckOrder
 
 
-accept_payme_request_view = AcceptPaymeRequestsView.as_view()
+@api_view(['POST'])
+def checkout_view(request):
+    """Tekshirib korish uchun."""
+    data = request.data
+    if 'id' in data and 'amount' in data:
+        order_id = data['id']
+        amount = Decimal(data['amount'])
+        if 'return_url' in data:
+            return_url = data['return_url']
+        else:
+            return_url = 'https://swiftvisa.uz/'
+        paycom = Paycom()
+        data['url'] = paycom.create_initialization(amount=amount, order_id=order_id, return_url=return_url)
+    return Response(data)

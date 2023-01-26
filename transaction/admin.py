@@ -1,26 +1,13 @@
 from django.contrib import admin
+from .models import Order
+from django.contrib.auth.models import Group, User
 
-from .models import Transaction
-
-
-class TransactionAdmin(admin.ModelAdmin):
-    list_display = (
-        "id",
-        "transaction_type",
-        "status",
-        "is_paid",
-        "is_verified",
-        "is_canceled",  
-    )
-    list_display_links = ("id",)
-    list_filter = (
-        "status",
-        "transaction_type",
-        "is_paid",
-        "is_verified",
-        "is_canceled",
-    )
-    list_editable = ("is_paid", "transaction_type", "status")
+# Register your models here.
 
 
-admin.site.register(Transaction, TransactionAdmin)
+admin.site.register(Order)
+
+
+admin.site.site_header = 'Payment Administration'
+
+admin.site.unregister(Group)
