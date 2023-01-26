@@ -1,0 +1,43 @@
+name: Production Django deploy SWIFT API
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: GIT pulling from github repository
+      uses: appleboy/scp-action@master
+      env:
+        HOST: ${{ secrets.REGRU_HOST }}
+        USERNAME: ${{ secrets.REGRU_USERNAME }}
+        PORT: ${{ secrets.REGRU_PORT }}
+        KEY: ${{ secrets.REGRU_SSH_PRIVATE_KEY }}
+      with:
+        source: "."
+        target: "/UTKIRBEK-2022/Swift"
+
+    - name: Command using from script
+      uses: appleboy/ssh-action@master
+      env:
+        DJANGO_SETTINGS_MODULE: "Swift.settings"
+      with:
+        host: ${{ secrets.REGRU_HOST }}
+        USERNAME: ${{ secrets.REGRU_USERNAME }}
+        PORT: ${{ secrets.REGRU_PORT }}
+        KEY: ${{ secrets.REGRU_SSH_PRIVATE_KEY }}
+        envs: DJANGO_SETTINGS_MODULE
+        script_stop: true
+        script: |
+          git --work-tree=/UTKIRBEK-2022/Swift --git-dir=/UTKIRBEK-2022/Swift/.git clean -f .
+          /UTKIRBEK-2022/Swift/env/bin/pip install -r /UTKIRBEK-2022/Swift/requirements.txt
+          /UTKIRBEK-2022/Swift/env/bin/python /UTKIRBEK-2022/Swift/manage.py migrate
+          systemctl restart swiftapi.service
+          sh /root/devops/swiftapi.sh "${{ github.event.head_commit.message }}"
