@@ -1,8 +1,16 @@
 from django.urls import path
-from .views import CardCreateApiView, CardVerifyApiView,PaymentApiView
+
+from . import views
 
 urlpatterns = [
-    path('card-create/', CardCreateApiView.as_view(), name='card_create'),
-    path('card-verify/', CardVerifyApiView.as_view(), name='card_verify'),
-    path('payment/', PaymentApiView.as_view(), name='payment'),
+    path(
+        "initialize_payment/",
+        view=views.initialize_payment_api_view,
+        name="initialize_payment",
+    ),
+    path(
+        "integration_with_payme/",
+        view=views.accept_payme_request_view,
+        name="accept_payme_requests",
+    ),
 ]

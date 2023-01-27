@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'visa',
     'corsheaders',
     'transaction.apps.TransactionConfig',
+    'paycomuz',
 ]
 
 MIDDLEWARE = [
@@ -139,13 +140,14 @@ USE_X_FORWARDED_HOST = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 
-PAYME_SETTINGS = {
-    'DEBUG':False,   #DEBUG => True yoki False ligiga qarab sizning KEY ingiz bilan ishlaydi.
-    'ID':'63d0c83c4ade4c6768a2ef85',  # ID =>  bu sizga payme tomonidan beriladigan kassa ID.
-    'SECRET_KEY':'TQz2D@3TKQMSinAJSYjMTMccX1&I29N%AERS',  # SECRET_KEY =>  bu sizga payme tomonidan beriladigan SECRET_KEY(Production uchun).
-    # 'SECRET_KEY':'MGF7JNqM8vp9g8H19sXBXIWEgJsqCEc3yCVE',  # SECRET_KEY =>  bu sizga payme tomonidan beriladigan SECRET_KEY(Test uchun).
-    'ACCOUNTS':{
-        'KEY_1':'order_id',   # KEY_1 =>  Order ID uchun.
-        'KEY_2':'',
+
+PAYCOM_SETTINGS = {
+    "TOKEN":"63d0c83c4ade4c6768a2ef85", # TOKEN =>  bu sizga payme tomonidan beriladigan kassa ID.
+    "KASSA_ID": "63d0c83c4ade4c6768a2ef85",  # KASSA_ID =>  bu sizga payme tomonidan beriladigan kassa ID.
+    "SECRET_KEY": "TQz2D@3TKQMSinAJSYjMTMccX1&I29N%AERS",   # SECRET_KEY =>  bu sizga payme tomonidan beriladigan SECRET_KEY.
+    "ACCOUNTS": {
+        "KEY": "order_id"  # KEY_1 =>  Order ID uchun.
     }
 }
+
+PAYME_PRICE_HELPER = 100

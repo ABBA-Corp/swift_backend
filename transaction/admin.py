@@ -1,18 +1,31 @@
 from django.contrib import admin
+
 from .models import Transaction
-from django.contrib import admin
-from django.conf import settings
 
 
+class TransactionAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "owner",
+        "transaction_type",
+        "status",
+        "is_paid",
+        "is_verified",
+        "is_canceled",  
+    )
+    list_display_links = ("id",)
+    list_filter = (
+        "owner",
+        "status",
+        "transaction_type",
+        "is_paid",
+        "is_verified",
+        "is_canceled",
+    )
+    search_fields = [
+        "owner__first_name",
+    ]
+    list_editable = ("is_paid", "transaction_type", "status")
 
-class TransactionModelAdmin(admin.ModelAdmin):
 
-    def get_status(self, obj):
-        return obj.get_status_display()
-    get_status.short_description = 'status'
-
-    search_fields = ('request_id',)
-    list_display = ['trans_id', 'request_id', 'amount', 'account', 'get_status', 'create_time', 'pay_time']
-
-
-admin.site.register(Transaction, TransactionModelAdmin)
+admin.site.register(Transaction, TransactionAdmin)

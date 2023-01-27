@@ -1,160 +1,62 @@
-"""
-Siz Karta yaratganizda token beriladi, shu token ni barcha request larda ishlatasiz.
-"""
-
-import requests
-
-from rest_framework.views import APIView
+from django.conf import settings
+from paycomuz import Paycom
+from paycomuz.views import MerchantAPIView
+from rest_framework import permissions, status
 from rest_framework.response import Response
+from rest_framework.views import APIView
+from . import serializers
+from .helper import CheckPayMeTransaction
+from .models import TRANSACTIONTYPECHOICES, Transaction
+from .service import initialize_transaction
 
-from .serializers import SubscribeSerializer
-from .models import Transaction
-from .config import *
-from .methods import *
+from rest_framework.decorators import api_view
 
 
+converter_amount = settings.PAYME_PRICE_HELPER
 
 
-
-class CardCreateApiView(APIView):
-    """Kartani Avval Ro'yxatdan o'tkazishimiz kerak bo'ladi."""
+class InitializePaymentAPIView(APIView):
+    serializer_class = serializers.InitializePaymentSerializer
+    
     def post(self, request):
-        serializer = SubscribeSerializer(data=request.data, many=False)
-        serializer.is_valid(raise_exception=True)
-        result = self.card_create(serializer.validated_data)
+        data = self.serializer_class(data=request.data)
+        data.is_valid(raise_exception=True)
 
-        return Response(result)
+        transaction_type = data.validated_data.get("transaction_type")
+        price = data.validated_data.get("price")
 
-    def card_create(self, validated_data):
-        """Kartani yaratib qilib olamiz."""
-        data = dict(
-            id=validated_data['id'],
-            method=CARD_CREATE,
-            params=dict(
-                card=dict(
-                    number=validated_data['params']['card']['number'],
-                    expire=validated_data['params']['card']['expire'],
-                ),
-                amount=validated_data['params']['amount'],
-                save=validated_data['params']['save']
+        transaction_id = initialize_transaction(
+            request.user,
+            price,
+            transaction_type,
+        )
+        generated_link = ""
+        if transaction_type == TRANSACTIONTYPECHOICES.PAYME:
+            """
+            Note:
+            PayMe accepts price in UZB TIYN that's why, we multiply the price by 100 # noqa
+            sum = 10 000
+            Payme accepts it as 10000 tiyns that is 100 sums
+            thats why we send 10000 sums * 100 that is 1 000 000 tiyn
+            """
+            price = price * converter_amount
+            # TODO: change success return url
+            generated_link = Paycom().create_initialization(
+                price,
+                transaction_id,
+                return_url="https://swiftvisa.uz/",
             )
-        )
-        response = requests.post(URL, json=data, headers=AUTHORIZATION_CREATE)
-        result = response.json()
-        if 'error' in result:
-            return result
-
-        token = result['result']['card']['token']
-        result = self.card_get_verify_code(token)
-
-        return result
-
-    def card_get_verify_code(self, token):
-        """Agar karta mavjud bo'lsa unga code jo'natamiz."""
-        data = dict(
-            method=CARD_GET_VERIFY_CODE,
-            params=dict(
-                token=token
-            )
-        )
-        response = requests.post(URL, json=data, headers=AUTHORIZATION_CREATE)
-        result = response.json()
-        if 'error' in result:
-            return result
-
-        result.update(token=token)
-        return result
-
-
-class CardVerifyApiView(APIView):
-    """Tasdiqlash code ni tekshirish."""
-    def post(self, request):
-        serializer = SubscribeSerializer(data=request.data, many=False)
-        serializer.is_valid(raise_exception=True)
-        result = self.card_verify(serializer.validated_data)
-
-        return Response(result)
-
-    def card_verify(self, validated_data):
-        """Code ni kiritish."""
-        data = dict(
-            id=validated_data['id'],
-            method=CARD_VERIFY,
-            params=dict(
-                token=validated_data['params']['token'],
-                code=validated_data['params']['code'],
-            )
-        )
-        response = requests.post(URL, json=data, headers=AUTHORIZATION_CREATE)
-        result = response.json()
-
-        return result
-
-
-class PaymentApiView(APIView):
-    """Karta muvaffaqiyatlik ro'yxatdan o'tgandan keyin, endi Pul to'lasek bo'ladi."""
-    def post(self, request):
-        serializer = SubscribeSerializer(data=request.data, many=False)
-        serializer.is_valid(raise_exception=True)
-        token = serializer.validated_data['params']['token']
-        result = self.receipts_create(token, serializer.validated_data)
-
-        return Response(result)
-
-    def receipts_create(self, token, validated_data):
-        """Pul tushishi uchun headers da biz KEY ni berishimiz kerak."""
-        key_2 = validated_data['params']['account'][KEY_2] if KEY_2 else None
-        data = dict(
-            id=validated_data['id'],
-            method=RECEIPTS_CREATE,
-            params=dict(
-                amount=validated_data['params']['amount'],
-                account=dict(
-                    KEY_1 = validated_data['params']['account'][KEY_1],
-                    KEY_2 = key_2,
-                )
-            )
-        )
-        response = requests.post(URL, json=data, headers=AUTHORIZATION_RECEIPT)
-        result = response.json()
-        if 'error' in result:
-            return result
-
-        trans_id = result['result']['receipt']['_id']
-        trans = Transaction()
-        trans.create_transaction(
-            trans_id=trans_id,
-            request_id=result['id'],
-            amount=result['result']['receipt']['amount'],
-            account=result['result']['receipt']['account'],
-            status=trans.PROCESS,
-        )
-        result = self.receipts_pay(trans_id, token)
-        return result
-
-    def receipts_pay(self, trans_id, token):
-        """Barchasi aniq va pul tolandi."""
-        data = dict(
-            method=RECEIPTS_PAY,
-            params=dict(
-                id=trans_id,
-                token=token,
-            )
-        )
-        response = requests.post(URL, json=data, headers=AUTHORIZATION_RECEIPT)
-        result = response.json()
-        trans = Transaction()
-
-        if 'error' in result:
-            trans.update_transaction(
-                trans_id=trans_id,
-                status=trans.FAILED,
-            )
-            return result
-
-        trans.update_transaction(
-            trans_id=result['result']['receipt']['_id'],
-            status=trans.PAID,
+        return Response(
+            status=status.HTTP_200_OK,
+            data={"generated_link": generated_link},
         )
 
-        return result
+
+initialize_payment_api_view = InitializePaymentAPIView.as_view()
+
+
+class AcceptPaymeRequestsView(MerchantAPIView):
+    VALIDATE_CLASS = CheckPayMeTransaction
+
+
+accept_payme_request_view = AcceptPaymeRequestsView.as_view()

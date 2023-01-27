@@ -1,39 +1,67 @@
-
 from django.db import models
+from django.conf import settings
+from django.contrib.auth.models import User
+
+
+
+
+class BaseManager(models.Manager):
+    def get_queryset(self):
+        return models.QuerySet(self.model)
+
+
+class TRANSACTIONTYPECHOICES(models.TextChoices):
+    PAYME = "payme"
+
+
+class TRANSACTIONSTATUS(models.TextChoices):
+    NEW = "new"
+    VERIFIED = "verified"
+    PAID = "paid"
+    CANCELED = "canceled"
+    ACCEPTED = "accepted"
+
 
 
 class Transaction(models.Model):
-    """
-    Payme uchun Transaction model
-    """
-    PROCESS = 0
-    PAID = 1
-    FAILED = 2
-    STATUS = (
-        (PROCESS, 'processing'),
-        (PAID, 'paid'),
-        (FAILED, 'failed'),
+    total_price = models.DecimalField(max_digits=20, decimal_places=2)
+    is_verified = models.BooleanField(default=False)
+    is_paid = models.BooleanField(default=False)
+    is_canceled = models.BooleanField(default=False)
+    owner = models.ForeignKey(User, on_delete=models.PROTECT, related_name='transactions')
+    created_at = models.DateTimeField(auto_now_add=True)
+    modified_at = models.DateTimeField(auto_now=True)
+    transaction_type = models.CharField(
+        max_length=10,
+        choices=TRANSACTIONTYPECHOICES.choices,
+    )
+    status = models.CharField(
+        max_length=10,
+        choices=TRANSACTIONSTATUS.choices,
+        default=TRANSACTIONSTATUS.NEW
     )
 
-    trans_id = models.CharField(max_length=255)
-    request_id = models.IntegerField()
-    amount = models.DecimalField(decimal_places=2, default=0.00, max_digits=10)
-    account = models.TextField(blank=True, null=True)
-    status = models.CharField(max_length=10, default=PROCESS, choices=STATUS)
-    create_time = models.DateTimeField(auto_now_add=True)
-    pay_time = models.DateTimeField(auto_now=True)
+    class Meta:
+        ordering = ("-id",)
+        verbose_name = "Transaction"
+        verbose_name_plural = "Transactions"
 
+    def verify(self):
+        self.status = TRANSACTIONSTATUS.VERIFIED
+        self.is_verified = True
+        self.save()
 
-    def create_transaction(self, trans_id, request_id, amount, account, status):
-        Transaction.objects.create(
-            trans_id=trans_id,
-            request_id=request_id,
-            amount=amount / 100,
-            account=account,
-            status=status
-        )
+    def make_payment(self):
+        self.status = TRANSACTIONSTATUS.PAID
+        self.is_paid = True
+        self.save()
 
-    def update_transaction(self, trans_id, status):
-        trans = Transaction.objects.get(trans_id=trans_id)
-        trans.status = status
-        trans.save()
+    def cancel(self):
+        self.status = TRANSACTIONSTATUS.CANCELED
+        self.is_canceled = True
+        self.is_paid = False
+        self.save()
+
+    def __str__(self):
+        return f"{str(self.owner)}  {str(self.total_price)}"
+
