@@ -66,7 +66,7 @@ SECURE_CONTENT_TYPE_NOSNIFF = env.bool(
 # STATIC
 # ------------------------
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-# STATIC_ROOT = env("DJANGO_STATIC")
+STATIC_ROOT = env("DJANGO_STATIC")
 # MEDIA
 # ------------------------------------------------------------------------------
 # MEDIA_ROOT = env("DJANGO_MEDIA")
