@@ -40,7 +40,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'visa',
     'corsheaders',
-    'transaction.apps.TransactionConfig',
+    'transaction',
     'paycomuz',
 ]
 
