@@ -15,7 +15,7 @@ class CitizenCategory(models.Model):
 
     class Meta:
         verbose_name_plural = 'Citizen Category'
-    
+
 
 class BuisnessCategory(models.Model):
     country = models.CharField(max_length=10, unique=True)
@@ -23,7 +23,7 @@ class BuisnessCategory(models.Model):
 
     class Meta:
         verbose_name_plural = 'Buisness Category'
-    
+
 
 class Travel(models.Model):
     name_uz = models.CharField(max_length=200, null=True, blank=True)
@@ -39,7 +39,7 @@ class Travel(models.Model):
     image4 = models.ImageField(null=True, blank=True)
     image5 = models.ImageField(null=True, blank=True)
     flag = models.ImageField(null=True, blank=True)
-    
+
     class Meta:
         verbose_name_plural = 'Travel'
 
@@ -108,6 +108,9 @@ class DityoSlider(models.Model):
     class Meta:
         verbose_name_plural = 'Dityo Slider'
 
+    def __str__(self):
+        return str(self.name_uz)
+
 
 class CountrySlider(models.Model):
     image = models.ImageField(null=True, blank=True)
@@ -121,6 +124,9 @@ class CountrySlider(models.Model):
 
     class Meta:
         verbose_name_plural = 'Country Slider'
+
+    def __str__(self):
+        return str(self.name_uz)
 
 
 class Countries(models.Model):
@@ -160,6 +166,7 @@ class Continent(models.Model):
 
     class Meta:
         verbose_name_plural = 'Continents'
+
 
 class Flag(models.Model):
     image = models.ImageField(null=True, blank=True)
