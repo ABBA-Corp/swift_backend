@@ -1,9 +1,10 @@
 from .models import Transaction
 
 
-def initialize_transaction(owner, price, transaction_type):
+def initialize_transaction(fullname, phone, price, transaction_type):
     obj = Transaction.objects.create(
-        owner=owner,
+        fullname=fullname,
+        phone=phone,
         total_price=price,
         transaction_type=transaction_type,
     )

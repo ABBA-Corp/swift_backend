@@ -7,6 +7,8 @@ class InitializePaymentSerializer(serializers.Serializer):
         choices=TRANSACTIONTYPECHOICES.choices,
     )
     price = serializers.DecimalField(max_digits=20, decimal_places=2)
+    fullname = serializers.CharField()
+    phone = serializers.CharField()
 
 
 class TransactionListSerializer(serializers.ModelSerializer):

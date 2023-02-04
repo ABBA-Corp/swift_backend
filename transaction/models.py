@@ -22,13 +22,13 @@ class TRANSACTIONSTATUS(models.TextChoices):
     ACCEPTED = "accepted"
 
 
-
 class Transaction(models.Model):
     total_price = models.DecimalField(max_digits=20, decimal_places=2)
     is_verified = models.BooleanField(default=False)
     is_paid = models.BooleanField(default=False)
     is_canceled = models.BooleanField(default=False)
-    owner = models.ForeignKey(User, on_delete=models.PROTECT, related_name='transactions')
+    fullname = models.CharField(max_length=100)
+    phone = models.CharField(max_length=20)
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
     transaction_type = models.CharField(

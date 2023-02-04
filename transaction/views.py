@@ -24,11 +24,14 @@ class InitializePaymentAPIView(APIView):
 
         transaction_type = data.validated_data.get("transaction_type")
         price = data.validated_data.get("price")
+        fullname = data.validated_data.get("fullname")
+        phone = data.validated_data.get("phone")
 
         transaction_id = initialize_transaction(
-            request.user,
-            price,
-            transaction_type,
+            price=price,
+            transaction_type=transaction_type,
+            fullname=fullname,
+            phone=phone,
         )
         generated_link = ""
         if transaction_type == TRANSACTIONTYPECHOICES.PAYME:

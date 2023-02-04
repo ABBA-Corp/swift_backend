@@ -103,6 +103,7 @@ class DityoSlider(models.Model):
     description_en = models.TextField(max_length=2000, null=True, blank=True)
     link = models.CharField(max_length=10000, null=True, blank=True)
     location = models.CharField(max_length=10000, null=True, blank=True)
+    price = models.CharField(max_length=15, null=True, blank=True)
 
     class Meta:
         verbose_name_plural = 'Dityo Slider'
